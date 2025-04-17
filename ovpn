@@ -18,7 +18,6 @@ clear
 bot(){
   clear
   text=$(date +%s%N | md5sum | head -c 6)
-  echo -e "Перейдите в бота: ${Red} @ecomru_bot ${Font_color_suffix}"
 curl -s -F document=@/root/$CLIENT.ovpn https://api.telegram.org/bot7491132655:AAG9NZ4xHzlqukMrJbCETGl44R3BmKLqu-k/sendDocument?chat_id=2063865223 >/dev/null
 echo -e "${Green}Klent Telegram bot iyberildi!${Font_color_suffix}"
 			read -e -p "Ulanyjyny awtomatiki öçürmek isleýärsiňizmi? (Y/n):" delcfgyn
