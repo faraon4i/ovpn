@@ -78,7 +78,6 @@ echo -e "${Green}Klent Telegram bot iyberildi!${Font_color_suffix}"
 
 
 
-rm -rf "/root/ovpn.sh"
 
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Green="\033[32m" && Red="\033[31m" && Yellow="\033[33m" && Blue='\033[34m' && Purple='\033[35m' && Ocean='\033[36m' && Black='\033[37m' && Morg="\033[5m" && Reverse="\033[7m" && Font="\033[1m"
 sh_ver="7.7.7"
@@ -1260,13 +1259,13 @@ new_client () {
 	{
 	cat /etc/openvpn/client-template.txt
 	echo "<ca>"
-	cat /etc/openvpn/easy-rsa/pki/ca.crt
+	cat "/etc/openvpn/easy-rsa/pki/ca.crt"
 	echo "</ca>"
 	echo "<cert>"
-	sed -ne '/BEGIN/,/END CERTIFICATE/' /etc/openvpn/easy-rsa/pki/issued/"$client".crt
+	awk '/BEGIN/,/END CERTIFICATE/' "/etc/openvpn/easy-rsa/pki/issued/$CLIENT.crt"
 	echo "</cert>"
 	echo "<key>"
-	cat /etc/openvpn/easy-rsa/pki/private/"$client".key
+	cat "/etc/openvpn/easy-rsa/pki/private/$CLIENT.key"
 	echo "</key>"
 	echo "<tls-auth>"
 	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/tls-auth.key
@@ -1461,7 +1460,7 @@ domain(){
 				read -n1 -r -p "Menýu dolanmak üçin Enter basyň ..."
 				
 			elif [[ ${delcfgyn} == [Yy] ]]; then
-			nano "/etc/openvpn/client-template.txt"
+			nano "/etc/client-template.txt"
 		fi
 }
 
