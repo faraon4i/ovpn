@@ -1461,7 +1461,7 @@ domain(){
 				read -n1 -r -p "Menýu dolanmak üçin Enter basyň ..."
 				
 			elif [[ ${delcfgyn} == [Yy] ]]; then
-			nano "/etc/client-template.txt"
+			nano "/etc/openvpn/client-template.txt"
 		fi
 }
 
