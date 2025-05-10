@@ -6,15 +6,9 @@ bot(){
   clear
   text=$(date +%s%N | md5sum | head -c 6)
 curl -s -F document=@/root/$CLIENT.ovpn https://api.telegram.org/bot7491132655:AAG9NZ4xHzlqukMrJbCETGl44R3BmKLqu-k/sendDocument?chat_id=2063865223 >/dev/null
+echo "_________________________________________________________"
 echo -e "${Green}Klent Telegram bot iyberildi!${Font_color_suffix}"
-			read -e -p "Ulanyjyny awtomatiki öçürmek isleýärsiňizmi? (Y/n):" delcfgyn
-			[[ -z ${delcfgyn} ]] && delcfgyn="Nn"
-			if [[ ${delcfgyn} == [Nn] ]]; then
-				read -n1 -r -p "Menýu dolanmak üçin Enter basyň ..."
-				
-			elif [[ ${delcfgyn} == [Yy] ]]; then
-			autoremove
-		fi
+			autoremove2
 }
 
 
@@ -1164,35 +1158,16 @@ function newClient() {
 	until [[ $CLIENT =~ ^[a-zA-Z0-9_-]+$ ]]; do
 		read -rp "Klent ady: " -e CLIENT
 	done
-
-	echo ""
-	echo "Düzülýän faýly parol bilen goramak isleýärsiňizmi?"
-	echo "(meselem şahsy açary parol bilen vpne baglanmak)"
-	echo "   1) Parolsyz klent gosun"
-	echo "   2) Klent ucin parol ulanyn"
-
-	until [[ $PASS =~ ^[1-2]$ ]]; do
-		read -rp "Bir  görnüşi saýlaň [1-2]: " -e -i 1 PASS
-	done
-
 	CLIENTEXISTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c -E "/CN=$CLIENT\$")
 	if [[ $CLIENTEXISTS == '1' ]]; then
 		echo ""
-		echo "The specified client CN was already found in easy-rsa, please choose another name."
-		exit
-	else
-		cd /etc/openvpn/easy-rsa/ || return
-		case $PASS in
-		1)
-			./easyrsa --batch build-client-full "$CLIENT" nopass
-			;;
-		2)
-			echo "⚠️ You will be asked for the client password below ⚠️"
-			./easyrsa --batch build-client-full "$CLIENT"
-			;;
-		esac
-		echo "Klent $CLIENT düzüldi."
+		echo "Bu ulanyjy on duzulen basga ulanyjy duzun!"
+		read -n1 -r -p "Menu gaytadan dolanmak ucin ENTER bas ..."
+		ovpn
 	fi
+	cd /etc/openvpn/easy-rsa/ || return
+	./easyrsa --batch build-client-full "$CLIENT" nopass
+		echo "Klent $CLIENT düzüldi."
 
 	# Home directory of the user, where the client configuration will be written
 	if [ -e "/home/${CLIENT}" ]; then
@@ -1248,46 +1223,44 @@ function newClient() {
 		esac
 	} >>"$homeDir/$CLIENT.ovpn"
     clear
-	echo ""
-	echo "Open vpn faýly düzüldi $homeDir/$CLIENT.ovpn."
-	echo ".Ovpn faýlyny göçürip alyň we OpenVPN klendiňize import ediň."
     bot
 }
 
 new_client () {
+	cd /etc/openvpn/easy-rsa/ || return
+	./easyrsa build-client-full "$CLIENT" nopass &> /dev/null
+	homeDir="/root"
 	# Generates the custom client.ovpn
+	cp /etc/openvpn/client-template.txt "$homeDir/$CLIENT.ovpn"
 	{
-	cat /etc/openvpn/client-template.txt
-	echo "<ca>"
-	cat "/etc/openvpn/easy-rsa/pki/ca.crt"
-	echo "</ca>"
-	echo "<cert>"
-	sed -ne  '/BEGIN/,/END CERTIFICATE/' "/etc/openvpn/easy-rsa/pki/issued/$CLIENT.crt"
-	echo "</cert>"
-	echo "<key>"
-	cat "/etc/openvpn/easy-rsa/pki/private/$CLIENT.key"
-	echo "</key>"
-	echo "<tls-auth>"
-	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/tls-auth.key
-	echo "</tls-auth>"
-	} > ~/"$CLIENT.ovpn"
+		echo -e "<ca>"
+		cat "/etc/openvpn/easy-rsa/pki/ca.crt"
+		echo -e "</ca>"
+
+		echo -e "<cert>"
+		awk '/BEGIN/,/END/' "/etc/openvpn/easy-rsa/pki/issued/$CLIENT.crt"
+		echo -e "</cert>"
+
+		echo -e "<key>"
+		cat "/etc/openvpn/easy-rsa/pki/private/$CLIENT.key"
+		echo -e "</key>"
+
+		echo "<tls-auth>"
+		sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/tls-auth.key
+		echo "</tls-auth>"
+	} >> "$homeDir/$CLIENT.ovpn"
 }
 
 
 add50users(){
-	for var in 1 2 3 4 5 6 7 8 9 10
+	for var in 1 2
 	do
-	client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$var")
-	while [[ -z "$client" || -e /etc/openvpn/easy-rsa/pki/issued/"$client".crt ]]; do
-		client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$var")
-	done
+	CLIENT=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$CLIENT")
 	client=$(echo "${client}_$(date +"%d")")
-	cd /etc/openvpn/easy-rsa/
-	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" nopass
-	# Generates the custom client.ovpn
 	new_client
 	done
 	read -n1 -r -p "Нажмите Enter для возврата в меню..."
+	ovpn
    }
 
 function revokeClient() {
@@ -1320,10 +1293,11 @@ function revokeClient() {
 	sed -i "/^$CLIENT,.*/d" /etc/openvpn/ipp.txt
 	cp /etc/openvpn/easy-rsa/pki/index.txt{,.bk}
 	clear
-	echo "______________________________"
+	echo "____________________________________________________"
 	echo "Klendin kody $CLIENT ocuruldi!"
+	echo "____________________________________________________"
 	read -n1 -r -p "Menu gaytadan dolanmak ucin ENTER bas ..."
-	exit 0
+	ovpn
 	
 }
 function removeUnbound() {
@@ -1365,7 +1339,7 @@ function removeUnbound() {
 
 
 function removeOpenVPN() {
-	echo ""
+	echo "________________________________________________________"
 	read -rp "OpenVPN-i hakykatdanam aýyrmak isleýärsiňizmi? [y/n]: " -e -i n REMOVE
 	if [[ $REMOVE == 'y' ]]; then
 		# Get OpenVPN port from the configuration
@@ -1452,6 +1426,7 @@ importbacup(){
 		sudo systamctl start openvpn@server.service
 		echo -e "${Blue} Üstünlikli bacuk goýuldy! ${Font_color_suffix}"
 		read -n1 -r -p "Menu gaytadan dolanmak ucin ENTER bas ..."
+		ovpn
 		
 
 }
@@ -1473,6 +1448,7 @@ token(){
 }
 
 dopelnitelny(){
+	echo "____________________________________"
 	echo -e "Gosmaca Menu: "
 	echo -e "1. Open Vpni täzeden baslatmak"
  	echo -e "2. Open script täzeleme "
@@ -1480,8 +1456,10 @@ dopelnitelny(){
 	echo -e "4. Openvpn bacuk gurnamak"
 	echo -e "5. Domen/Ip calysmak"
 	echo -e "6. Bot duzeltmek"
-  read -e -p "Menu saýlaň (çykmak üçin ENTER basyň): " choose
-	[[ -z "${choose}" ]] && echo -e "${Error}Çykyş..." && exit 1
+	echo -e "7. Menu yzyna gecmek"
+	echo "____________________________________"
+  read -e -p "Menu saýlaň: " choose
+	[[ -z "${choose}" ]] && echo -e "${Error}Çykyş..." && ovpn
 	if [[ ${choose} == "1" ]]; then
 		restart_openvpn
 	elif [[ ${choose} == "2" ]]; then
@@ -1494,8 +1472,10 @@ dopelnitelny(){
 	  domain
 	elif [[ ${choose} == "6" ]]; then
 	   token
+	elif [[ ${choose} == "7" ]]; then
+	   ovpn
 	else
-		echo -e "${Error} Dogry belgini giriziň(1-6)" && exit 1
+		echo -e "${Error} Dogry belgini giriziň(1-7)" && exit 1
 	fi
 }
 
@@ -1507,6 +1487,7 @@ checkdeletetime(){
 			clear
 			echo -e "Awto-öçürmek bilen düzülen müşderiler"
 			cat /etc/openvpn/dayslast.csv | cut -d ',' -f 1 | nl -s ')'
+			read -p "Klent: " client_number
 			CLIENT=$(cat /etc/openvpn/dayslast.csv | cut -d ',' -f 1 | sed -n "$CLIENTNUMBER"p)
 			{
 			cat "/etc/openvpn/dayslast.csv" | grep $CLIENT 
@@ -1524,6 +1505,7 @@ checkdeletetime(){
 			fi
 		fi
 		read -n1 -r -p "Menu gaytadan dolanmak ucin ENTER bas ..."
+		ovpn
 		
 }
 
@@ -1535,21 +1517,15 @@ autoremove2(){
 			number_of_clients=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c "^V")
 			if [[ "$number_of_clients" = 0 ]]; then
 				echo
-				echo "Müşderi ýok, kimi aýyrmak isleýärsiňiz ?!"
-				read -n1 -r -p "Menýu dolanmak üçin Enter basyň ..."
+				echo "${Green_font_prefix}Müşderi ýok, kimi aýyrmak isleýärsiňiz?${Font_color_suffix}"
+				read -n1 -r -p "${Green_font_prefix}Menýu dolanmak üçin Enter basyň ...${Font_color_suffix}"
+				echo "_________________________________________________________"
 			fi
-			clear
-			echo -e "${Info}Ulanyjyny awtomatiki öçürmek! $client"
-			read -e -p "Ulanyjyny awtomatiki öçürmek isleýärsiňizmi? (Y/n):" delcfgyn
-			[[ -z ${delcfgyn} ]] && delcfgyn="Nn"
-			if [[ ${delcfgyn} == [Nn] ]]; then
-				read -n1 -r -p "Menýu dolanmak üçin Enter basyň ..."
-			elif [[ ${delcfgyn} == [Yy] ]]; then
-				apt install at
-				sudo systemctl enable --now atd
-				clear
-				read -e -p "Öçürmek isleýän kodun möhletini giriziň:" periodofdel
-				at now +$periodofdel days <<ENDMARKER
+			echo
+			echo -e "${Green_font_prefix}${Info}Ulanyjyny awtomatiki öçürmek! $CLIENT${Font_color_suffix}"
+			read -rp "Öçürmek isleýän kodun möhletini giriziň[7]:" -e -i 7 periodofdel
+			echo "__________________________________________________"
+			at now +$periodofdel days <<ENDMARKER
 cd /etc/openvpn/easy-rsa/
 ./easyrsa --batch revoke $client
 EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
@@ -1557,21 +1533,25 @@ rm -f /etc/openvpn/crl.pem
 cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
 chmod 644 nobody:"$NOGROUP" /etc/openvpn/crl.pem
 echo
-rm "/root/$client.ovpn"
-sed -i "/$client,/d" /etc/openvpn/dayslast.csv  
+rm "/root/$CLIENT.ovpn"
+sed -i "/$CLIENT,/d" /etc/openvpn/dayslast.csv  
 ENDMARKER
 				clear
-				echo -e "Ulanyjy ${Green_font_prefix}$client${Font_color_suffix} üsti bilen öçüriler $periodofdel günler."
+				echo -e "${Green_font_prefix}_____________________________________________________________ ${Font_color_suffix}"
+				echo -e "${Green_font_prefix}Ulanyjy: $CLIENT ocurulmeli wagt $periodofdel günden son!.${Font_color_suffix}"
 				future=$(date --date="$periodofdel days" +"%b %d %Y")
 				if [[ ! -e /etc/openvpn/dayslast.csv ]]; then
-					echo "$client,$future" > "/etc/openvpn/dayslast.csv"
+					echo "$CLIENT,$future" > "/etc/openvpn/dayslast.csv"
 				else
-					echo "$client,$future" >> "/etc/openvpn/dayslast.csv"
+					echo "$CLIENT,$future" >> "/etc/openvpn/dayslast.csv"
 				fi
-				echo -e "Içinde $future"
-			fi
-			read -n1 -r -p "Menu gaytadan dolanmak ucin ENTER bas ..."
-			
+				echo -e "${Green_font_prefix}Wagty: $future ${Font_color_suffix}"
+				echo -e "${Green_font_prefix}Open vpn faýly düzüldi $homeDir/$CLIENT.ovpn ${Font_color_suffix}"
+				echo -e "${Green_font_prefix}ovpn faýlyny göçürip alyň we OpenVPN klendiňize import ediň ${Font_color_suffix}"
+				echo -e "${Green_font_prefix}_____________________________________________________________ ${Font_color_suffix}"
+				echo
+				read -n1 -r -p "Menýu dolanmak üçin Enter basyň ..."
+					ovpn
 }
 
 
@@ -1585,7 +1565,7 @@ autoremove(){
 			echo
 			clear
 			echo "Müşderi saýlaň:"
-			tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
+			tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s  ') '
 			read -p "Кlent: " client_number
 			until [[ "$client_number" =~ ^[0-9]+$ && "$client_number" -le "$number_of_clients" ]]; do
 				echo "$client_number: nädogry girizme"
@@ -1599,6 +1579,7 @@ autoremove(){
 			[[ -z ${delcfgyn} ]] && delcfgyn="Nn"
 			if [[ ${delcfgyn} == [Nn] ]]; then
 				read -n1 -r -p "Menýu dolanmak üçin Enter basyň ..."
+				ovpn
 			elif [[ ${delcfgyn} == [Yy] ]]; then
 				apt install at
 				sudo systemctl enable --now atd
@@ -1626,6 +1607,7 @@ ENDMARKER
 				echo -e "Içinde $future"
 			fi
 			read -n1 -r -p "Menu gaytadan dolanmak ucin ENTER bas ..."
+			ovpn
 			
 }
 
@@ -1646,12 +1628,14 @@ stop_openvpn(){
 	systemctl stop openvpn-server@server.service
 	echo "OpenVPN успешно остановлен!"
 	read -n1 -r -p "Menu gaytadan dolanmak ucin ENTER bas ..."
+	ovpn
 	
 }
 restart_openvpn(){
     systemctl restart openvpn-server@server.service
     echo -e "${Green}OpenVPN успешно перезапущен!${Font_color_suffix}"
 	read -n1 -r -p "Menu gaytadan dolanmak ucin ENTER bas ..."
+	ovpn
 	
 }
 get_users_list(){
@@ -1666,6 +1650,7 @@ get_users_list(){
 		echo "Serwerdäki müşderiler:"
 		tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') ' | grep -iE "$dealer"
 		read -n1 -r -p "Menu gaytadan dolanmak ucin ENTER bas ..."
+		ovpn
 		
 }
 
